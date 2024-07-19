@@ -69,4 +69,19 @@ class shopRatimirroyaltyPluginAPI {
             return null;
         }
     }
+    public function tokenParams($contact_id) {
+        $contact = new waContact($contact_id);
+        $phone = $contact->get('phone', 'value');
+        if (empty($phone) || empty($phone[0])) {
+            waLog::log('no-phone for user id = '.$contact_id, 'royalty_error.log');
+            return null;
+        }
+        $phone = preg_replace('/[^\d+]/', '', $phone[0]);
+        $tokenParams = [
+            'authToken' => $phone,
+            'password' => "ardoz",
+            'type' => 'Phone',
+        ];
+        return $tokenParams;
+    }
 }
