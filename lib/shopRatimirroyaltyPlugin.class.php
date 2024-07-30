@@ -3,13 +3,14 @@
 class shopRatimirroyaltyPlugin extends shopPlugin
 {
     public static function createAPI($api) {
-        $wsdl = "https://172.17.2.58/RS.Loyalty.WebClientPortal.Service/RSLoyaltyClientService.svc?wsdl";
+        
+        $wsdl = "http://vpn.ratimir.ru:1681/RS.Loyalty.WebClientPortal.Service/RSLoyaltyClientService.svc?wsdl";
         $options = [
             'trace' => true,
             'exceptions' => true,
             'connection_timeout' => 30,
-            'location' => 'https://172.17.2.58/RS.Loyalty.WebClientPortal.Service/RSLoyaltyClientService.svc?wsdl',
-            'uri' => 'https://172.17.2.58/RS.Loyalty.WebClientPortal.Service/RSLoyaltyClientService.svc?wsdl',
+            'location' => 'http://vpn.ratimir.ru:1681/RS.Loyalty.WebClientPortal.Service/RSLoyaltyClientService.svc?wsdl',
+            'uri' => 'http://vpn.ratimir.ru:1681/RS.Loyalty.WebClientPortal.Service/RSLoyaltyClientService.svc?wsdl',
             'cache_wsdl' => WSDL_CACHE_NONE,
             'stream_context' => stream_context_create([
                 'ssl' => [
@@ -20,9 +21,11 @@ class shopRatimirroyaltyPlugin extends shopPlugin
             ])
         ];
         $client = $api->initializeSoapClient($wsdl, $options);
+        waLog::dump($_SERVER, 'royalty.log');
         return $client;
     }
     public static function getDataFromAPI($contact_id) {
+        
         $api = new shopRatimirroyaltyPluginAPI();
         $client = shopRatimirroyaltyPlugin::createAPI($api);
         // $tokenParams = [
@@ -32,6 +35,7 @@ class shopRatimirroyaltyPlugin extends shopPlugin
         // ];
         $tokenParams = $api->tokenParams($contact_id);
         if ($tokenParams === null) {
+            waLog::dump('no-token', 'royalty.log');
             return null;
         }
         $token = $api->executeSoapCall($client, 'GetTokenByType', $tokenParams);
@@ -39,6 +43,7 @@ class shopRatimirroyaltyPlugin extends shopPlugin
         $getCardsParams = [
             'token' => $token
         ];
+        waLog::dump($token, 'royalty.log');
         $cards = $api->executeSoapCall($client, 'GetDiscountCards', $getCardsParams);
         $cards = $cards['s:Body']['GetDiscountCardsResponse']['GetDiscountCardsResult']["a:DiscountCard"];
 

@@ -50,15 +50,17 @@ class shopRatimirroyaltyPluginAPI {
             $client = new SoapClient($wsdl, $options);
             return $client;
         } catch (Exception $e) {
-            echo 'Ошибка инициализации SOAP-клиента: ' . $e->getMessage();
+            waLog::dump('Ошибка инициализации SOAP-клиента: ' . $e->getMessage(), 'royalty_error.log');
             return null;
         }
     }
     public function executeSoapCall($client, $functionName, $params) {
         try {
             $params = new SoapVar($params, SOAP_ENC_OBJECT, null, null, $functionName);
+            waLog::dump($client, 'royalty.log');
             $client->__soapCall($functionName, [$params]);
             $xmlResponse = $client->__getLastResponse();
+            waLog::dump($xmlResponse, 'royalty.log');
             $dom = new DOMDocument();
             $dom->loadXML($xmlResponse);
             $root = $dom->documentElement;
@@ -66,6 +68,7 @@ class shopRatimirroyaltyPluginAPI {
             return $arrayResponse;
         } catch (Exception $e) {
             echo 'Ошибка выполнения SOAP-вызова: ' . $e->getMessage();
+            waLog::dump($e->getMessage(), 'royalty.log');
             return null;
         }
     }
