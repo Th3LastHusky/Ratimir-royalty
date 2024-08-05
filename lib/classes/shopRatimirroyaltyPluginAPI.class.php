@@ -51,16 +51,27 @@ class shopRatimirroyaltyPluginAPI {
             return $client;
         } catch (Exception $e) {
             waLog::dump('Ошибка инициализации SOAP-клиента: ' . $e->getMessage(), 'royalty_error.log');
+<<<<<<< Updated upstream
+=======
+            waLog::dump($_SERVER, 'royalty_error.log');
+>>>>>>> Stashed changes
             return null;
         }
     }
     public function executeSoapCall($client, $functionName, $params) {
         try {
             $params = new SoapVar($params, SOAP_ENC_OBJECT, null, null, $functionName);
+<<<<<<< Updated upstream
             waLog::dump($client, 'royalty.log');
             $client->__soapCall($functionName, [$params]);
             $xmlResponse = $client->__getLastResponse();
             waLog::dump($xmlResponse, 'royalty.log');
+=======
+            // waLog::dump($client, 'royalty.log');
+            $client->__soapCall($functionName, [$params]);
+            $xmlResponse = $client->__getLastResponse();
+            // waLog::dump($xmlResponse, 'royalty.log');
+>>>>>>> Stashed changes
             $dom = new DOMDocument();
             $dom->loadXML($xmlResponse);
             $root = $dom->documentElement;

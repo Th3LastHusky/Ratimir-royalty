@@ -4,13 +4,22 @@ class shopRatimirroyaltyPlugin extends shopPlugin
 {
     public static function createAPI($api) {
         
+<<<<<<< Updated upstream
         $wsdl = "http://vpn.ratimir.ru:1681/RS.Loyalty.WebClientPortal.Service/RSLoyaltyClientService.svc?wsdl";
+=======
+        $wsdl = "https://vpn.ratimir.ru:1681/RS.Loyalty.WebClientPortal.Service/RSLoyaltyClientService.svc?wsdl";
+>>>>>>> Stashed changes
         $options = [
             'trace' => true,
             'exceptions' => true,
             'connection_timeout' => 30,
+<<<<<<< Updated upstream
             'location' => 'http://vpn.ratimir.ru:1681/RS.Loyalty.WebClientPortal.Service/RSLoyaltyClientService.svc?wsdl',
             'uri' => 'http://vpn.ratimir.ru:1681/RS.Loyalty.WebClientPortal.Service/RSLoyaltyClientService.svc?wsdl',
+=======
+            'location' => 'https://vpn.ratimir.ru:1681/RS.Loyalty.WebClientPortal.Service/RSLoyaltyClientService.svc?wsdl',
+            'uri' => 'https://vpn.ratimir.ru:1681/RS.Loyalty.WebClientPortal.Service/RSLoyaltyClientService.svc?wsdl',
+>>>>>>> Stashed changes
             'cache_wsdl' => WSDL_CACHE_NONE,
             'stream_context' => stream_context_create([
                 'ssl' => [
@@ -21,8 +30,46 @@ class shopRatimirroyaltyPlugin extends shopPlugin
             ])
         ];
         $client = $api->initializeSoapClient($wsdl, $options);
+<<<<<<< Updated upstream
         waLog::dump($_SERVER, 'royalty.log');
+=======
+        // waLog::dump($_SERVER, 'royalty.log');
+>>>>>>> Stashed changes
         return $client;
+    }
+    public static function bindVirtualCard($contact_id) {
+        $api = new shopRatimirroyaltyPluginAPI();
+        $client = shopRatimirroyaltyPlugin::createAPI($api);
+        $tokenParams = $api->tokenParams($contact_id);
+        if ($tokenParams === null) {
+            waLog::dump('no-token', 'royalty.log');
+            return null;
+        }
+        $token = $api->executeSoapCall($client, 'GetTokenByType', $tokenParams);
+        $token = $token["s:Body"]["GetTokenByTypeResponse"]["GetTokenByTypeResult"];
+        $params = [
+            'token' => $token
+        ];
+        $bindVirtualCard = $api->executeSoapCall($client, 'BindVirtualDiscountCardToCustomer', $params);
+        waLog::dump($bindVirtualCard, 'royalty_vc.log');
+        $HasFreeVirtualDiscountCards = $api->executeSoapCall($client, 'HasFreeVirtualDiscountCards', $params);
+        wa_dumpc($HasFreeVirtualDiscountCards);
+        return $bindVirtualCard;
+    }
+    public static function getToken() {
+        $api = new shopRatimirroyaltyPluginAPI();
+        $client = shopRatimirroyaltyPlugin::createAPI($api);
+        $tokenParams = [
+            'authToken' => '79940043988',
+            
+            'type' => 'Phone',
+            
+        ];
+        wa_dumpc($tokenParams);
+        $token = $api->executeSoapCall($client, 'GetTokenByType', $tokenParams);
+        $token = $token["s:Body"]["GetTokenByTypeResponse"]["GetTokenByTypeResult"];
+        wa_dumpc($token);
+        return $token;
     }
     public static function getDataFromAPI($contact_id) {
         
@@ -43,7 +90,11 @@ class shopRatimirroyaltyPlugin extends shopPlugin
         $getCardsParams = [
             'token' => $token
         ];
+<<<<<<< Updated upstream
         waLog::dump($token, 'royalty.log');
+=======
+        // waLog::dump($token, 'royalty.log');
+>>>>>>> Stashed changes
         $cards = $api->executeSoapCall($client, 'GetDiscountCards', $getCardsParams);
         $cards = $cards['s:Body']['GetDiscountCardsResponse']['GetDiscountCardsResult']["a:DiscountCard"];
 
@@ -58,8 +109,8 @@ class shopRatimirroyaltyPlugin extends shopPlugin
                 $bonus = $bonuse["a:BonusAmount"];
             }
         }
-        /*
-        объект карты такой-же как и в запросе по токену
+        
+        //объект карты такой-же как и в запросе по токену
         $card_id = (string)$cards['a:DiscountCardID'];
         $cardParams = [
             'token' => $token,
@@ -68,7 +119,7 @@ class shopRatimirroyaltyPlugin extends shopPlugin
         $cardObject = $api->executeSoapCall($client, 'GetDiscountCardById', $cardParams);
         
         wa_dumpc($cardObject);
-        */
+        
         $returnArray = [
             'cards' => $cards,
         ];
