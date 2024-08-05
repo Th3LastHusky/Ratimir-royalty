@@ -4,22 +4,13 @@ class shopRatimirroyaltyPlugin extends shopPlugin
 {
     public static function createAPI($api) {
         
-<<<<<<< Updated upstream
         $wsdl = "http://vpn.ratimir.ru:1681/RS.Loyalty.WebClientPortal.Service/RSLoyaltyClientService.svc?wsdl";
-=======
-        $wsdl = "https://vpn.ratimir.ru:1681/RS.Loyalty.WebClientPortal.Service/RSLoyaltyClientService.svc?wsdl";
->>>>>>> Stashed changes
         $options = [
             'trace' => true,
             'exceptions' => true,
             'connection_timeout' => 30,
-<<<<<<< Updated upstream
             'location' => 'http://vpn.ratimir.ru:1681/RS.Loyalty.WebClientPortal.Service/RSLoyaltyClientService.svc?wsdl',
             'uri' => 'http://vpn.ratimir.ru:1681/RS.Loyalty.WebClientPortal.Service/RSLoyaltyClientService.svc?wsdl',
-=======
-            'location' => 'https://vpn.ratimir.ru:1681/RS.Loyalty.WebClientPortal.Service/RSLoyaltyClientService.svc?wsdl',
-            'uri' => 'https://vpn.ratimir.ru:1681/RS.Loyalty.WebClientPortal.Service/RSLoyaltyClientService.svc?wsdl',
->>>>>>> Stashed changes
             'cache_wsdl' => WSDL_CACHE_NONE,
             'stream_context' => stream_context_create([
                 'ssl' => [
@@ -30,11 +21,7 @@ class shopRatimirroyaltyPlugin extends shopPlugin
             ])
         ];
         $client = $api->initializeSoapClient($wsdl, $options);
-<<<<<<< Updated upstream
         waLog::dump($_SERVER, 'royalty.log');
-=======
-        // waLog::dump($_SERVER, 'royalty.log');
->>>>>>> Stashed changes
         return $client;
     }
     public static function bindVirtualCard($contact_id) {
@@ -90,11 +77,7 @@ class shopRatimirroyaltyPlugin extends shopPlugin
         $getCardsParams = [
             'token' => $token
         ];
-<<<<<<< Updated upstream
         waLog::dump($token, 'royalty.log');
-=======
-        // waLog::dump($token, 'royalty.log');
->>>>>>> Stashed changes
         $cards = $api->executeSoapCall($client, 'GetDiscountCards', $getCardsParams);
         $cards = $cards['s:Body']['GetDiscountCardsResponse']['GetDiscountCardsResult']["a:DiscountCard"];
 
