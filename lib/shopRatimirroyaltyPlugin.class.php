@@ -171,4 +171,8 @@ class shopRatimirroyaltyPlugin extends shopPlugin
             'balance' => $balance
         ];
     }
+    public static function testMSSQL() {
+        $sql = new shopRatimirroyaltyPluginSQL();
+        $sql->createConnection();
+    }
 }

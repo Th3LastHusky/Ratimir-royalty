@@ -1,5 +1,10 @@
 <?php
 class shopRatimirroyaltyPluginAPI {
+    /**
+     * Функция для обработки xml в php массив, т.к. стандартная функция не обрабатывает фиды ратимира
+     * @param DOMDocument $node
+     * @return array
+     */
     public function xmlToArray($node) {
         $output = [];
     
@@ -44,7 +49,12 @@ class shopRatimirroyaltyPluginAPI {
     
         return $output;
     }
-    
+    /**
+     * Функция создания SOAP клиента
+     * @param array $wsdl
+     * @param array $options
+     * @return SoapClient|null
+     */
     public function initializeSoapClient($wsdl, $options = []) {
         try {
             $client = new SoapClient($wsdl, $options);
@@ -54,6 +64,13 @@ class shopRatimirroyaltyPluginAPI {
             return null;
         }
     }
+    /**
+     * Функция вызова soap запроса и обработки ответа в php массив
+     * @param mixed $client
+     * @param mixed $functionName
+     * @param mixed $params
+     * @return array|null
+     */
     public function executeSoapCall($client, $functionName, $params) {
         try {
             $params = new SoapVar($params, SOAP_ENC_OBJECT, null, null, $functionName);
@@ -72,6 +89,11 @@ class shopRatimirroyaltyPluginAPI {
             return null;
         }
     }
+    /**
+     * Функция для получения параметров для запроса api токена royalty
+     * @param mixed $contact_id
+     * @return array|null
+     */
     public function tokenParams($contact_id) {
         $contact = new waContact($contact_id);
         $phone = $contact->get('phone', 'value');
