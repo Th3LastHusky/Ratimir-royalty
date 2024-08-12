@@ -141,4 +141,34 @@ class shopRatimirroyaltyPlugin extends shopPlugin
         $card_number = $model->getCardNumber($contact_id);
         return $card_number['card'];
     }
+    /** 
+     * Данные - это номер карты и баланс на кошельке
+     * Функция только для получения тех данных, что находятся в скопированных из бд ратимира таблицах
+     * @param int $contact_id waContactId
+     * 
+     
+    */
+    public static function getLocalData($contact_id) {
+        $contact = new waContact($contact_id);
+        $phone = $contact->get('phone', 'value');
+        if (empty($phone) || empty($phone[0])) {
+            waLog::log('no-phone for user id = '.$contact_id, 'royalty_error.log');
+            return null;
+        }
+        $phone = preg_replace('/[^\d+]/', '', $phone[0]);
+        $localModel = new shopRatimirroyaltyPluginLocalModel();
+        $customer_id = $localModel->getCustomerId($phone);
+        
+        if (!is_null($customer_id)) {
+            $account_id = $localModel->getAccountId($customer_id);
+            $balance = $localModel->getIndicatorBalance($account_id);
+            $card = $localModel->getCard($account_id);
+        } else {
+            return null;
+        }
+        return [
+            'card' => $card,
+            'balance' => $balance
+        ];
+    }
 }
