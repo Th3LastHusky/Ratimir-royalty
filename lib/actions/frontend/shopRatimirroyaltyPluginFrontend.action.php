@@ -32,9 +32,50 @@ class shopRatimirroyaltyPluginFrontendAction extends waViewAction
             case 'editProfileData':
                 $this->editProfileData();
                 break;
+            case 'getLoyaltyProfile':
+                $this->getLoyaltyProfile();
+                break;
             default:
                 break;
         }
+    }
+
+    /**
+     * Диагностика: сравнивает локальный профиль контакта с тем, что реально
+     * сохранено в системе лояльности (dbo.Customers/CustomerPropertyValues) —
+     * чтобы проверить, что синхронизация профиля не поломалась.
+     *
+     * Доступ: только администратор магазина, либо сам залогиненный пользователь
+     * может проверить собственный профиль (contact_id по умолчанию — текущий юзер).
+     *
+     * GET-параметры:
+     *   contact_id — необязателен для не-админа (тогда берётся текущий пользователь);
+     *                для админа можно передать id любого контакта.
+     *
+     * Пример: /ratimirroyalty/?action=getLoyaltyProfile&contact_id=123
+     */
+    private function getLoyaltyProfile()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $currentUserId = wa()->getUser()->getId();
+        $isAdmin = wa()->getUser()->isAdmin('shop');
+        $contact_id = waRequest::get('contact_id', $currentUserId, 'int');
+
+        if (!$isAdmin && $contact_id != $currentUserId) {
+            http_response_code(403);
+            echo json_encode(['status' => 'error', 'message' => 'Доступно только для своего профиля или администратора'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        if (!$contact_id) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'contact_id не указан'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $result = shopRatimirroyaltyPlugin::getLoyaltyProfileByContactId($contact_id);
+        echo json_encode(['status' => 'ok'] + $result, JSON_UNESCAPED_UNICODE);
     }
 
     private function checkCardNew()

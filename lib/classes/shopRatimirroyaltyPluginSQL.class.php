@@ -775,7 +775,78 @@ class shopRatimirroyaltyPluginSQL
            */
             
         } catch (Exception $e) {
-            
+
+        }
+    }
+
+    /**
+     * Читает текущий профиль клиента напрямую из системы лояльности (dbo.Customers +
+     * dbo.CustomerPropertyValues + dbo.CustomerPhones) — для сверки с локальными
+     * данными и проверки, что синхронизация профиля (updateCustomerProfile) реально
+     * долетает и сохраняется на стороне роялти.
+     *
+     * @param int|string $customerID
+     * @return array|null Возвращает null, если клиент с таким CustomerID не найден.
+     */
+    public function getCustomerProfile($customerID)
+    {
+        try {
+            $conn = $this->getLoyaltyDBConnection();
+
+            $sql = "SELECT CustomerID, FirstName, SecondName, LastName, ModifiedDate
+                    FROM dbo.Customers
+                    WHERE CustomerID = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([$customerID]);
+            $customer = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$customer) {
+                return null;
+            }
+
+            // Обратная конвертация — симметрично записи в updateCustomerProfile()
+            // (там значения переводятся в Windows-1251 перед отправкой в N-параметр).
+            foreach (['FirstName', 'SecondName', 'LastName'] as $field) {
+                if (isset($customer[$field]) && $customer[$field] !== null) {
+                    $customer[$field] = mb_convert_encoding($customer[$field], 'UTF-8', 'Windows-1251');
+                }
+            }
+
+            // Дата рождения (PropertyID = 54)
+            $sql = "SELECT DateValue FROM dbo.CustomerPropertyValues WHERE CustomerID = ? AND PropertyID = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([$customerID, 54]);
+            $birthDate = $stmt->fetchColumn();
+
+            // Пол (PropertyID = 55; 5 = мужской, 6 = женский — см. updateCustomerProfile)
+            $sql = "SELECT EnumPropertyValueID FROM dbo.CustomerPropertyValues WHERE CustomerID = ? AND PropertyID = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([$customerID, 55]);
+            $genderEnum = $stmt->fetchColumn();
+            $gender = null;
+            if ($genderEnum !== false && $genderEnum !== null) {
+                $gender = ((int)$genderEnum === 5) ? 'm' : (((int)$genderEnum === 6) ? 'f' : null);
+            }
+
+            // Телефон(ы), привязанные к клиенту
+            $sql = "SELECT Phone FROM dbo.CustomerPhones WHERE CustomerID = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([$customerID]);
+            $phones = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+            return [
+                'CustomerID'   => $customer['CustomerID'],
+                'FirstName'    => $customer['FirstName'],
+                'SecondName'   => $customer['SecondName'],
+                'LastName'     => $customer['LastName'],
+                'BirthDate'    => $birthDate ?: null,
+                'Gender'       => $gender,
+                'Phones'       => $phones ?: [],
+                'ModifiedDate' => $customer['ModifiedDate'],
+            ];
+        } catch (Exception $e) {
+            waLog::dump($e->getMessage(), 'royalty/getCustomerProfile.log');
+            return null;
         }
     }
 

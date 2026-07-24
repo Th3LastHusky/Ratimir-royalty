@@ -307,6 +307,98 @@ class shopRatimirroyaltyPlugin extends shopPlugin
     }
 
     /**
+     * Достаёт из системы лояльности текущий профиль клиента (имя/отчество/фамилия,
+     * дата рождения, пол, телефоны) и сравнивает его с локальными данными контакта —
+     * чтобы проверить, что синхронизация профиля (editProfileData/updateCustomerProfile)
+     * реально долетает и сохраняется на стороне роялти, а не только локально.
+     *
+     * @param int|string $contact_id
+     * @return array{
+     *     contact_id: int|string,
+     *     customer_id: int|string|null,
+     *     local: array,
+     *     loyalty: array|null,
+     *     matches: array<string,bool>|null,
+     *     error: string|null
+     * }
+     */
+    public static function getLoyaltyProfileByContactId($contact_id)
+    {
+        $contact = new waContact($contact_id);
+
+        $phoneValues = (array)$contact->get('phone', 'value');
+        $rawPhone = reset($phoneValues) ?: '';
+        $normalizedPhone = self::normalizePhoneNumber($rawPhone);
+
+        $birthdayRaw = $contact->get('birthday');
+        if (is_array($birthdayRaw)) {
+            $birthdayRaw = sprintf(
+                '%04d-%02d-%02d',
+                (int)($birthdayRaw['year'] ?? 0),
+                (int)($birthdayRaw['month'] ?? 0),
+                (int)($birthdayRaw['day'] ?? 0)
+            );
+        }
+
+        $local = [
+            'first_name'  => (string)$contact->get('first_name', 'value'),
+            'second_name' => (string)$contact->get('second_name', 'value'),
+            'last_name'   => (string)$contact->get('last_name', 'value'),
+            'phone'       => $rawPhone,
+            'birthday'    => $birthdayRaw ?: null,
+            'sex'         => $contact->get('sex') ?: null, // 1 = male, 2 = female (waContact)
+        ];
+
+        $result = [
+            'contact_id'  => $contact_id,
+            'customer_id' => null,
+            'local'       => $local,
+            'loyalty'     => null,
+            'matches'     => null,
+            'error'       => null,
+        ];
+
+        if (!$normalizedPhone) {
+            $result['error'] = 'no-phone';
+            return $result;
+        }
+
+        $phonesModel = new shopRatimirroyaltyPluginLocalTableCustomerPhonesModel();
+        $customerID = $phonesModel->getCustomerIdByPhone($normalizedPhone);
+
+        if (!$customerID) {
+            $result['error'] = 'customer-not-found';
+            return $result;
+        }
+        $result['customer_id'] = $customerID;
+
+        $sql = new shopRatimirroyaltyPluginSQL();
+        $loyalty = $sql->getCustomerProfile($customerID);
+
+        if ($loyalty === null) {
+            $result['error'] = 'loyalty-fetch-failed';
+            return $result;
+        }
+        $result['loyalty'] = $loyalty;
+
+        // Пол в роялти хранится как 'm'/'f' (см. getCustomerProfile), в waContact — 1/2.
+        $localSexNorm = ($local['sex'] == 1) ? 'm' : (($local['sex'] == 2) ? 'f' : null);
+
+        $result['matches'] = [
+            'first_name'  => mb_strtolower(trim($local['first_name']))  === mb_strtolower(trim((string)$loyalty['FirstName'])),
+            'second_name' => mb_strtolower(trim($local['second_name'])) === mb_strtolower(trim((string)$loyalty['SecondName'])),
+            'last_name'   => mb_strtolower(trim($local['last_name']))   === mb_strtolower(trim((string)$loyalty['LastName'])),
+            'birthday'    => $local['birthday'] && $loyalty['BirthDate']
+                ? (date('Y-m-d', strtotime($local['birthday'])) === date('Y-m-d', strtotime($loyalty['BirthDate'])))
+                : ($local['birthday'] === $loyalty['BirthDate']),
+            'sex'         => $localSexNorm === $loyalty['Gender'],
+            'phone'       => in_array($normalizedPhone, $loyalty['Phones'] ?? [], true),
+        ];
+
+        return $result;
+    }
+
+    /**
      * Костыль для доставания из indicators значения companyId по barcode
      * @param mixed $AccountID
      * @return void
