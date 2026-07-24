@@ -51,6 +51,7 @@ class shopRatimirroyaltyPluginAPI {
     }
     /**
      * Функция создания SOAP клиента
+     * 
      * @param array $wsdl
      * @param array $options
      * @return SoapClient|null
@@ -60,37 +61,52 @@ class shopRatimirroyaltyPluginAPI {
             $client = new SoapClient($wsdl, $options);
             return $client;
         } catch (Exception $e) {
-            waLog::dump('Ошибка инициализации SOAP-клиента: ' . $e->getMessage(), 'royalty_error.log');
+            $log = true;
+            if ($log) {
+                waLog::dump($e, $e->getMessage(), 'bindVirtalCard.log');
+            }
             return null;
         }
     }
     /**
      * Функция вызова soap запроса и обработки ответа в php массив
+     * 
      * @param mixed $client
      * @param mixed $functionName
      * @param mixed $params
      * @return array|null
      */
-    public function executeSoapCall($client, $functionName, $params) {
+    public function executeSoapCall($client, $functionName, $params, $log  = true){
         try {
             $params = new SoapVar($params, SOAP_ENC_OBJECT, null, null, $functionName);
-            waLog::dump($client, 'royalty.log');
+            if ($log) {
+                waLog::dump($params, 'royalty/apiLog.log');
+                waLog::dump($client, 'royalty/apiLog.log');
+                waLog::dump($functionName, 'royalty/apiLog.log');
+            }
             $client->__soapCall($functionName, [$params]);
+            if ($log) {
+                waLog::dump($client, 'royalty/apiLog.log');
+            }
             $xmlResponse = $client->__getLastResponse();
-            waLog::dump($xmlResponse, 'royalty.log');
+            if ($log) {
+                waLog::dump($xmlResponse, 'royalty/apiLog.log');
+            }
+            
             $dom = new DOMDocument();
             $dom->loadXML($xmlResponse);
             $root = $dom->documentElement;
             $arrayResponse = $this->xmlToArray($root);
             return $arrayResponse;
         } catch (Exception $e) {
-            echo 'Ошибка выполнения SOAP-вызова: ' . $e->getMessage();
-            waLog::dump($e->getMessage(), 'royalty.log');
+            // echo 'Ошибка выполнения SOAP-вызова: ' . $e->getMessage();
+            waLog::dump('exception', $e->getMessage(), 'royalty/apiError.log');
             return null;
         }
     }
     /**
      * Функция для получения параметров для запроса api токена royalty
+     * 
      * @param mixed $contact_id
      * @return array|null
      */
@@ -98,13 +114,19 @@ class shopRatimirroyaltyPluginAPI {
         $contact = new waContact($contact_id);
         $phone = $contact->get('phone', 'value');
         if (empty($phone) || empty($phone[0])) {
-            waLog::log('no-phone for user id = '.$contact_id, 'royalty_error.log');
+            
             return null;
         }
-        $phone = preg_replace('/[^\d+]/', '', $phone[0]);
+        
+        
+        $phone = shopRatimirroyaltyPlugin::normalizePhoneNumber($phone[0]);
+        
+        $password = '';
+        if ($contact_id == 119) {
+            $password = 'ardoz';
+        }
         $tokenParams = [
             'authToken' => $phone,
-            'password' => "ardoz",
             'type' => 'Phone',
         ];
         return $tokenParams;
