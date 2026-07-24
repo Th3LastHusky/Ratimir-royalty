@@ -12,8 +12,15 @@ class shopRatimirroyaltyPluginModel extends waModel {
         return $this->getByField('contact_id', $contact_id);
     }
     public function updateAffiliate($contact_id, $affiliate) {
-        return $this->query("
-            UPDATE `shop_customer` SET `affiliate_bonus` = " . $affiliate ." WHERE contact_id = ". $contact_id . ";"
-        );
+        
+        if (empty($affiliate) || $affiliate == '') {
+            return $this->query("
+                UPDATE `shop_customer` SET `affiliate_bonus` = " . "0" ." WHERE contact_id = ". $contact_id . ";"
+            );
+        } else {
+            return $this->query("
+                UPDATE `shop_customer` SET `affiliate_bonus` = " . $affiliate ." WHERE contact_id = ". $contact_id . ";"
+            );
+        }
     }
 }

@@ -1,8 +1,10 @@
 <?php
 class shopRatimirroyaltyPluginLocalModel extends waModel {
     public function getCustomerId($phone) {
-        $phone = preg_replace('/\D/', '', $phone);
+        // $phone = preg_replace('/\D/', '', $phone);
+        $phone = shopRatimirroyaltyPlugin::normalizePhoneNumber($phone);
         $data = $this->query("SELECT `CustomerID` FROM royalty_customerphones WHERE Phone = ". $phone)->fetchAll();
+        
         if (!empty($data)) {
             foreach ($data as $d) {
                 $customer_id = $d['CustomerID'];
@@ -34,10 +36,13 @@ class shopRatimirroyaltyPluginLocalModel extends waModel {
         return $card;
     }
     public function getIndicatorBalance($account_id) {
-        $data = $this->query('SELECT `Bonus` FROM royalty_indicators WHERE AccountId = '. $account_id);
+        $data = $this->query('SELECT `Bonus` FROM royalty_indicators WHERE AccountId = '. $account_id)->fetchAll();
+        
         foreach ($data as $d) {
-            $balance = $d['Bonus'];
+            $balance += $d['Bonus'];
         }
         return $balance;
     }
+
+    
 }
