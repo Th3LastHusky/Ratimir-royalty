@@ -488,22 +488,33 @@ class shopRatimirroyaltyPlugin extends shopPlugin
             }
             
         }
-        if (is_null($card['DiscountCardID']) && is_null($card['DiscountCardGroupID']) && !empty($card['card'])) {
+        if (empty($card['DiscountCardID']) && empty($card['DiscountCardGroupID']) && !empty($card['card'])) {
             try {
                 $localCardModel = new shopRatimirroyaltyPluginLocalTableDiscountCardsModel();
                 $c2cgModel = new shopRatimirroyaltyPluginLocalTableDc2dcgModel();
-    
+
                 $cardInfo = $localCardModel->getByField('Barcode', $card['card']);
-                $cardId = $cardInfo['DiscountCardID'];
-                $cardGroupInfo = $c2cgModel->getByField('DiscountCardID', $cardId);
-                $cardGroupId = $cardGroupInfo['DiscountCardGroupID'];
-                $updatedCheck = $model->updateByField('contact_id', (int)$contact_id, [
-                    'DiscountCardID' => (int)$cardId,
-                    'DiscountCardGroupID' => (int)$cardGroupId
-                ]);
-                // waLog::dump('Card data updated for contact_id = '.$contact_id, $updatedCheck, $card, 'royalty/updateCardInfo.log');
-                $card['DiscountCardID'] = $cardId;
-                $card['DiscountCardGroupID'] = $cardGroupId;
+                if (empty($cardInfo['DiscountCardID'])) {
+                    $localData = self::getLocalData($contact_id);
+                    if (is_array($localData) && !empty($localData['card']['barcode'])) {
+                        $cardInfo = $localCardModel->getByField('Barcode', $localData['card']['barcode']);
+                    }
+                }
+
+                if (!empty($cardInfo['DiscountCardID'])) {
+                    $cardId = $cardInfo['DiscountCardID'];
+                    $cardGroupInfo = $c2cgModel->getByField('DiscountCardID', $cardId);
+                    if (!empty($cardGroupInfo['DiscountCardGroupID'])) {
+                        $cardGroupId = $cardGroupInfo['DiscountCardGroupID'];
+                        $updatedCheck = $model->updateByField('contact_id', (int)$contact_id, [
+                            'DiscountCardID' => (int)$cardId,
+                            'DiscountCardGroupID' => (int)$cardGroupId
+                        ]);
+                        // waLog::dump('Card data updated for contact_id = '.$contact_id, $updatedCheck, $card, 'royalty/updateCardInfo.log');
+                        $card['DiscountCardID'] = $cardId;
+                        $card['DiscountCardGroupID'] = $cardGroupId;
+                    }
+                }
             } catch (waException $e) {
                 waLog::dump('Failed to add updated data to royalty_ratimir', $card, $e->getMessage(), 'royalty/getCotactData.log');
             }
